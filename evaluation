@@ -1,0 +1,25 @@
+# Evaluation method from baseline method
+def evaluate_accuracy(correct_sets, predicted_sets):
+    exact_matches = 0
+    total_correct_predictions = 0
+
+    # Calculate Exact Match Accuracy
+    for correct_set in correct_sets:
+        if correct_set in predicted_sets:
+            exact_matches += 1
+            total_correct_predictions += 4
+            continue
+
+        max_intersection = 1
+        for predicted_set in predicted_sets:
+            intersection = len(correct_set.intersection(predicted_set))
+            if intersection > max_intersection:
+                max_intersection = intersection
+
+        if max_intersection > 1:
+            total_correct_predictions += max_intersection
+
+    exact_match_accuracy = exact_matches / 4
+    cluster_purity = total_correct_predictions / 16
+
+    return exact_match_accuracy, cluster_purity
