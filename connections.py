@@ -91,19 +91,62 @@ def generate_new_prompt(prev_prompt, response, solution):
     model="gpt-4o",) # Verify the correct model name
   return new_prompt.choices[0].message.content
 
+def evaluate_answer(answer, solution):      #have some bug, always give "Error in parsing answer or solution. Skipping evaluation"
+    try:
+        answer_json = json.loads(answer)
+        solution_json = json.loads(solution)
+
+        answer_groups = answer_json['groups']
+        solution_groups = solution_json['groups']
+
+        exact_match_count = 0
+        total_groups = len(solution_groups)
+        
+        cluster_purity_scores = []
+
+        for answer_group, solution_group in zip(answer_groups, solution_groups):
+            answer_words = set(answer_group['words'])
+            solution_words = set(solution_group['words'])
+            
+            # Exact Match Accuracy
+            if answer_words == solution_words:
+                exact_match_count += 1
+            
+            # Cluster Purity Calculation
+            correct_words = answer_words.intersection(solution_words)
+            cluster_purity = len(correct_words) / len(answer_words)
+            cluster_purity_scores.append(cluster_purity)
+
+        exact_match_accuracy = (exact_match_count / total_groups) * 100
+        average_cluster_purity = (sum(cluster_purity_scores) / total_groups) * 100
+
+        print(f"Exact Match Accuracy: {exact_match_accuracy:.2f}%")
+        print(f"Average Cluster Purity: {average_cluster_purity:.2f}%\n")
+        
+        return exact_match_accuracy, average_cluster_purity
+
+    except json.JSONDecodeError:
+        print("Error in parsing answer or solution. Skipping evaluation.\n")
+        return 0, 0
+
 def iterative_loop(iterations, check):
   for i in range(iterations):
     if check is False:
       prompt = run_initial_prompt() #gets initial prompt
+      print("\n The initial prompt:\n")
       print(prompt)
       answer = get_answer(prompt) #runs initial prompt, get answer
+      print("\n The answer from the initial prompt:\n")
       print(answer)
       check = True
     else:
       new_prompt = generate_new_prompt(prompt, response, solution) #gets new prompt
+      print(f"\n iteration{i}:The new prompt: \n")
       print(new_prompt)
       answer = get_answer(new_prompt) #runs new prompt, get answer
+      print(f"\n iteration{i}:The new answer:\n")
       print(answer)
+      exact_match_accuracy, cluster_purity = evaluate_answer(answer, solutions)
       prompt = new_prompt #update previous prompt
 
 iterative_loop(it, check)
